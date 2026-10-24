@@ -1,0 +1,16 @@
+[package]
+name = "dartotsu_manga_mapper"
+version = "0.1.0"
+edition = "2021"
+authors = ["itsmechinmoy"]
+description = "Manga & Light Novel cross-service mapping generator for Dartotsu, powered by daily MangaBaka dumps"
+license = "MIT"
+repository = "https://github.com/itsmechinmoy/dartotsu_manga_mapper"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+zstd = "0.13"
+flate2 = "1.0"
+ureq = { version = "2.10", features = ["json"] }
+anyhow = "1.0"
