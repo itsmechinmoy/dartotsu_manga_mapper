@@ -48,6 +48,24 @@ def parse_int(val):
     except (ValueError, TypeError):
         return None
 
+def parse_float(val):
+    if val is None:
+        return None
+    try:
+        return float(val)
+    except (ValueError, TypeError):
+        return None
+
+def status_to_code(status):
+    mapping = {
+        "releasing": 1,
+        "completed": 2,
+        "hiatus": 3,
+        "cancelled": 4,
+        "upcoming": 5,
+    }
+    return mapping.get(str(status).lower() if status else "", 0)
+
 def parse_str(val):
     if val is None:
         return None
@@ -131,6 +149,9 @@ def main():
                 ann_id = parse_int(sources.get("anime_news_network", {}).get("id"))
                 shikimori_id = parse_int(sources.get("shikimori", {}).get("id"))
 
+                total_chapters = parse_float(rec.get("total_chapters"))
+                status = parse_str(rec.get("status"))
+
                 has_external = any(x is not None for x in [
                     anilist_id, mal_id, mu_id, kitsu_id, ap_id, ann_id, shikimori_id
                 ])
@@ -139,6 +160,10 @@ def main():
                     entry = {
                         "mangabaka_id": rec.get("id"),
                     }
+                    if total_chapters is not None:
+                        entry["total_chapters"] = int(total_chapters) if total_chapters.is_integer() else total_chapters
+                    if status:
+                        entry["status"] = status
                     if anilist_id is not None:
                         entry["anilist_id"] = anilist_id
                     if mal_id is not None:
@@ -201,9 +226,14 @@ def main():
         "kitsu_id",
         "anime_news_network_id",
         "shikimori_id",
+        "total_chapters",
+        "status",
     ]
     rows = []
     for item in items:
+        tc = item.get("total_chapters")
+        tc_scaled = round(tc * 100) if tc is not None else 0
+        st_code = status_to_code(item.get("status"))
         rows.append([
             item.get("mangabaka_id", 0),
             item.get("anilist_id", 0),
@@ -212,6 +242,8 @@ def main():
             item.get("kitsu_id", 0),
             item.get("anime_news_network_id", 0),
             item.get("shikimori_id", 0),
+            tc_scaled,
+            st_code,
         ])
 
     with open(flat_path, "w", encoding="utf-8") as f:

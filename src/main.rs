@@ -26,6 +26,10 @@ struct MangaBakaRecord {
     #[serde(default, rename = "type")]
     media_type: Option<String>,
     #[serde(default)]
+    total_chapters: Option<serde_json::Value>,
+    #[serde(default)]
+    status: Option<String>,
+    #[serde(default)]
     source: Option<HashMap<String, SourceEntry>>,
 }
 
@@ -36,6 +40,10 @@ pub struct MangaMappingItem {
     pub title: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none", rename = "type")]
     pub media_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub total_chapters: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub anilist_id: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -58,6 +66,25 @@ pub struct MangaMappingItem {
 pub struct FlatMapping {
     pub columns: Vec<String>,
     pub rows: Vec<Vec<i64>>,
+}
+
+fn parse_f64(val: Option<&serde_json::Value>) -> Option<f64> {
+    match val {
+        Some(serde_json::Value::Number(n)) => n.as_f64(),
+        Some(serde_json::Value::String(s)) => s.parse::<f64>().ok(),
+        _ => None,
+    }
+}
+
+fn status_to_code(status: Option<&str>) -> i64 {
+    match status {
+        Some("releasing") => 1,
+        Some("completed") => 2,
+        Some("hiatus") => 3,
+        Some("cancelled") => 4,
+        Some("upcoming") => 5,
+        _ => 0,
+    }
 }
 
 fn parse_i64(val: Option<&serde_json::Value>) -> Option<i64> {
@@ -216,10 +243,14 @@ fn main() -> Result<()> {
                 || shikimori_id.is_some();
 
             if has_external {
+                let total_chapters = parse_f64(rec.total_chapters.as_ref());
+                let status = rec.status;
                 items.push(MangaMappingItem {
                     mangabaka_id: rec.id,
                     title: rec.title,
                     media_type: rec.media_type,
+                    total_chapters,
+                    status,
                     anilist_id,
                     mal_id,
                     mangaupdates_id,
@@ -270,6 +301,8 @@ fn main() -> Result<()> {
         "kitsu_id".to_string(),
         "anime_news_network_id".to_string(),
         "shikimori_id".to_string(),
+        "total_chapters".to_string(),
+        "status".to_string(),
     ];
     let rows: Vec<Vec<i64>> = items
         .iter()
@@ -282,6 +315,8 @@ fn main() -> Result<()> {
                 item.kitsu_id.unwrap_or(0),
                 item.anime_news_network_id.unwrap_or(0),
                 item.shikimori_id.unwrap_or(0),
+                item.total_chapters.map(|c| (c * 100.0).round() as i64).unwrap_or(0),
+                status_to_code(item.status.as_deref()),
             ]
         })
         .collect();

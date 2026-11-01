@@ -44,7 +44,9 @@ Compact JSON array containing all indexed series with at least two mapped servic
     "anime_planet_id": "dice-the-cube-that-changes-everything",
     "shikimori_id": 147443,
     "title": "DICE",
-    "type": "manhwa"
+    "type": "manhwa",
+    "total_chapters": 388,
+    "status": "completed"
   }
   ```
 
